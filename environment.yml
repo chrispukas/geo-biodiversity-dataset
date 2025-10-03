@@ -1,0 +1,8 @@
+name: gbio_env
+channels:
+  - defaults
+dependencies:
+  - python=3.12
+  - numpy
+  - pandas
+prefix: /Users/apple/miniconda3/envs/gbio_env

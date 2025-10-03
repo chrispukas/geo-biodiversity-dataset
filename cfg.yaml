@@ -1,0 +1,4 @@
+api-paths:
+  - name: GBIF
+    url: https://api.gbif.org/v1/
+    description: API access to the Global Biodiversity Information Facility
