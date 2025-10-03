@@ -1,4 +1,4 @@
-# Geofencenced Sattelite imagery, and corresponding biodiversity dataset
+# Geofencenced Sattelite Imagery, and Corresponding Biodiversity Dataset
 
 To install this repository, run the following commands:
 ```
