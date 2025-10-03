@@ -1,94 +1,90 @@
-import gbio
-import numpy as np
-import geemap
-import time
-
 import ee
+import time
+import numpy as np
 
-class SENTINELIO:
-    def __init__(self):
-        pass
-
+# ------------------------------
+# Helper functions
+# ------------------------------
 
 def km_to_deg(km: float, lat: float):
-        lat_deg = km / 111.0
-        lon_deg = km / (111.320 * np.cos(np.deg2rad(lat)))
-        return lon_deg, lat_deg
+    """Convert km to degrees latitude and longitude at a given latitude."""
+    lat_deg = km / 111.0
+    lon_deg = km / (111.320 * np.cos(np.deg2rad(lat)))
+    return lon_deg, lat_deg
 
-def get_rect(lon: float, lat: float, w_km: float):
-    lon_mp, lat_mp = km_to_deg(km=w_km/2.0, lat=lat)
+def get_bbox(center_lon: float, center_lat: float, width_km: float):
+    """Return an ee.Geometry.Rectangle bounding box around a center point."""
+    lon_offset, lat_offset = km_to_deg(km=width_km/2.0, lat=center_lat)
+    lon_min = center_lon - lon_offset
+    lon_max = center_lon + lon_offset
+    lat_min = center_lat - lat_offset
+    lat_max = center_lat + lat_offset
+    return ee.Geometry.Rectangle([lon_min, lat_min, lon_max, lat_max])
 
-    lon_min = lon - lon_mp
-    lon_max = lon + lon_mp
-
-    lat_min = lat - lat_mp
-    lat_max = lat + lat_mp
-
-    return  ee.Geometry.Rectangle([
-        lon_min, lat_min,
-        lon_max, lat_max
-    ])
-
-def pull_sat_image(geom: ee.Geometry, out_path: str):
+def export_tile(center_lon: float, center_lat: float, width_km: float, 
+                folder: str, prefix: str, scale: int = 10):
+    """Export a single Sentinel-2 median image tile as GeoTIFF to Google Drive."""
+    geom = get_bbox(center_lon, center_lat, width_km)
+    
     collection = (ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
                   .filterBounds(geom)
                   .filterDate('2024-01-01', '2024-12-31')
                   .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
                   .median()
-                  .clip(geom)
-                  )
-    geemap.ee_export_image(
-        collection,
-        filename=out_path,
-        scale=10,
+                  .clip(geom))
+    
+    task = ee.batch.Export.image.toDrive(
+        image=collection,
+        description=f'{prefix}_{center_lat}_{center_lon}',
+        folder=folder,
+        fileNamePrefix=f'{prefix}_{center_lat}_{center_lon}',
+        scale=scale,
         region=geom,
-        file_per_band=False
+        crs='EPSG:4326'
     )
-    print(f"Downloaded to {out_path}")
+    task.start()
+    return task
 
+# Create grid of centers
+def create_grid(lon_center, lat_center, w_km, n_tiles):
+    """n_tiles: number of tiles per side (odd number recommended)"""
+    lon_step, lat_step = km_to_deg(w_km, lat_center)
+    half = n_tiles // 2
+    lon_vals = [lon_center + i * lon_step for i in range(-half, half + 1)]
+    lat_vals = [lat_center + j * lat_step for j in range(-half, half + 1)]
+    return [(lon, lat) for lon in lon_vals for lat in lat_vals]
 
+def monitor_tasks(tasks, wait_sec=10):
+    """Monitor a list of Earth Engine export tasks."""
+    unfinished = tasks.copy()
+    while unfinished:
+        for t in unfinished[:]:
+            status = t.status()
+            print(status)
+            if status['state'] in ['COMPLETED', 'FAILED', 'CANCELLED']:
+                unfinished.remove(t)
+        time.sleep(wait_sec)
 
-def get_grid(lon_min: float, lon_max: float, lat_min: float, lat_max: float, w_km: float):
-    lon_step, lat_step = km_to_deg(km=w_km, lat=(lat_min+lat_max)/2.0)
-    lon_vals = np.arange(lon_min, lon_max, lon_step)
-    lat_vals = np.arange(lat_min, lat_max, lat_step)
-
-    i = 0
-    for lon in lon_vals:
-        for lat in lat_vals:
-            r = get_rect(lon=lon, lat=lat, w_km=w_km)
-            out_path = f"/Users/apple/Documents/github/geo-biodiversity-dataset/dataset/sat/tile_{i}.png"
-            i+=1
-
-
+# ------------------------------
+# Example usage
+# ------------------------------
 
 ee.Authenticate()
 ee.Initialize(project="geofenced-biodiversity-project")
 
-geom = get_rect(lon=-122.55, lat=37.65, w_km=2.0) 
+# List of center coordinates (lon, lat)
+centers = [
+    (51.50594342127512, -0.12428852168536396),
+]
 
-collection = (ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
-                  .filterBounds(geom)
-                  .filterDate('2024-01-01', '2024-12-31')
-                  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
-                  .median()
-                  .clip(geom)
-                  )
+w_km = 1.0        # tile size
+tiles_per_side = 9
 
-task = ee.batch.Export.image.toDrive(
-    image=collection,
-    description='tile_1km',
-    folder='GEE_tiles',
-    fileNamePrefix='tile_1km',
-    scale=10,
-    region=geom,
-    crs='EPSG:4326'
-)
-task.start()
+tasks = []
+for lon_center, lat_center in centers:
+    grid = create_grid(lon_center, lat_center, w_km, tiles_per_side)
+    for lon, lat in grid:
+        task = export_tile(lon, lat, w_km, folder='GEE_London', prefix='tile')
+        tasks.append(task)
 
-while task.status()['state'] in ['READY', 'RUNNING']:
-    print(task.status())
-    time.sleep(10)  # wait 10 seconds before checking again
-
-#pull_sat_image(geom=get_rect(lon=-122.55, lat=37.65, w_km=1.0), 
-#               out_path="/Users/apple/Documents/github/geo-biodiversity-dataset/dataset/sat/test.tif")
+monitor_tasks(tasks)
