@@ -1,11 +1,9 @@
 # Geofencenced Sattelite imagery, and corresponding biodiversity dataset
 
-This is a placeholder to explain the function of this dataset.
-
 To install this repository, run the following commands:
 ```
-git clone https://github.com/chrispukas/Discrete_Q-Learning_Grid-World.git;
-cd ./Discrete_Q-Learning_Grid-World;
+git clone https://github.com/chrispukas/geo-biodiversity-dataset.git
+cd ./geo-biodiversity-dataset;
 bash setup.sh;
 ```
 
