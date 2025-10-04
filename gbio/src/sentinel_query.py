@@ -87,4 +87,8 @@ for lon_center, lat_center in centers:
         task = export_tile(lon, lat, w_km, folder='GEE_London', prefix='tile')
         tasks.append(task)
 
+# tile 1 etc
+# csv tile_name, lon, lat, city
+columns: list = ["tile_name", "lon", "lat", "city"]
+
 monitor_tasks(tasks)
