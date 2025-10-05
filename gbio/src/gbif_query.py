@@ -77,6 +77,8 @@ class GBIFIO:
         return buckets
 
     def process_output(self, data: dict):
+        if data is None:
+            return None
         s_entries = data.get('facets', [])[0].get('counts', [])
 
         redlist_buckets = {
@@ -120,7 +122,7 @@ class GBIFIO:
             return None
         
         if res.status_code != 200:
-            print(f"Failed: Returned status code of {res.status_code}, with message: {res.json()}")
+            print(f"Failed: Returned status code of {res.status_code}, with message: {res}")
             return None
         
         data = res.json()
@@ -157,7 +159,7 @@ class GBIFIO:
         redlist = self.request(params=params,
                             endpoint=f"{self.endpoint_species}/{species_key}/iucnRedListCategory"
                             )
-        if data:
+        if data and redlist:
             data['redlist'] = redlist # Add redlist info if available
             self.species_cache[species_key] = data
             print("Pulling from GBIF API with species key:", species_key)

@@ -81,24 +81,21 @@ def monitor_tasks(tasks, wait_sec=10):
 # Main script
 # ------------------------------
 
-ee.Authenticate()
-ee.Initialize(project='geofenced-biodiversity-project')
+def query_tasks(tile_width_km: float=1.5, 
+                tiles_per_side: int=14, 
+                centers: list[tuple[float, float]] = [],
+                folder: str = 'Manchester_GEE',
+                earth_engine_project: str = 'geofenced-biodiversity-project'):
+    ee.Authenticate()
+    ee.Initialize(project=earth_engine_project)
 
-# List of center coordinates (lon, lat) — Manchester
-centers = [
-    (-2.223106165535259, 53.47882936553889), # Manchester
-]
+    tasks = []
+    for lon_center, lat_center in centers:
+        grid = create_grid(lon_center, lat_center, tile_width_km, tiles_per_side)
+        for lon, lat in grid:
+            task = export_tile(lon, lat, tile_width_km, folder=folder, prefix='tile')
+            if task:  # Only append tasks that actually started
+                tasks.append(task)
 
-w_km = 1.5        
-tiles_per_side = 14 
-
-tasks = []
-for lon_center, lat_center in centers:
-    grid = create_grid(lon_center, lat_center, w_km, tiles_per_side)
-    for lon, lat in grid:
-        task = export_tile(lon, lat, w_km, folder='Manchester_GEE', prefix='tile')
-        if task:  # Only append tasks that actually started
-            tasks.append(task)
-
-monitor_tasks(tasks)
-print("✅ All tasks finished or skipped.")
+    monitor_tasks(tasks)
+    print("✅ All tasks finished or skipped.")

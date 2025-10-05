@@ -5,4 +5,9 @@ dependencies:
   - python=3.12
   - numpy
   - pandas
+  - pyyaml
+  - requests
+  - opencv
+  - ipykernel
+  - tqdm
 prefix: /Users/apple/miniconda3/envs/gbio_env
