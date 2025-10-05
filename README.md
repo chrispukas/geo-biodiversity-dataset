@@ -25,5 +25,5 @@ For use in the 2025 IBMz Datathon.
 
 Coauthored by:
 
-Eoin Dwane (Maynooth University): https://www.linkedin.com/in/eoin-dwane/
+Eoin Dwane (Maynooth University): https://www.linkedin.com/in/eoin-dwane/ <br>
 Christopher Pukas (Imperial College London): https://www.linkedin.com/in/chrispukas/
