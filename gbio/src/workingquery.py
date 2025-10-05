@@ -28,7 +28,7 @@ def export_tile(center_lon: float, center_lat: float, width_km: float,
     
     collection = (ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
                   .filterBounds(geom)
-                  .filterDate('2024-06-01', '2024-06-30')
+                  .filterDate('2024-04-01', '2024-08-30')
                   .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
                   .filter(ee.Filter.calendarRange(10,14, 'hour')))
     
@@ -84,19 +84,19 @@ def monitor_tasks(tasks, wait_sec=10):
 ee.Authenticate()
 ee.Initialize(project='geofenced-biodiversity-project')
 
-# List of center coordinates (lon, lat) — Birmingham
+# List of center coordinates (lon, lat) — Manchester
 centers = [
-    (-1.9605071214849317, 52.50049113861541), # Birmingham
+    (-2.223106165535259, 53.47882936553889), # Manchester
 ]
 
 w_km = 1.5        
-tiles_per_side = 20 
+tiles_per_side = 14 
 
 tasks = []
 for lon_center, lat_center in centers:
     grid = create_grid(lon_center, lat_center, w_km, tiles_per_side)
     for lon, lat in grid:
-        task = export_tile(lon, lat, w_km, folder='2_Birmingham_GEE', prefix='tile')
+        task = export_tile(lon, lat, w_km, folder='Manchester_GEE', prefix='tile')
         if task:  # Only append tasks that actually started
             tasks.append(task)
 

@@ -5,6 +5,8 @@ import pandas as pd
 import time
 import numpy as np
 
+import gbio.src.gbif_query as gbq
+
 sharpness_kernel = np.array([
     [0, -1, 0],
     [-1, 5, -1],
@@ -12,6 +14,9 @@ sharpness_kernel = np.array([
 ])
 
 GAMMA = 1.5
+
+
+g = gbq.GBIFIO(silent=False)
 
 def apply_filters(img):
     img_cropped = img[0:150, 0:225]
@@ -27,11 +32,11 @@ def gen_entry(img_name: str,
     lat = lat.split('.')[0]
 
     return {
+        "full_name": str(img_name),
         "city": str(city),
         "variation": int(variation),
         "longitude": float(lon),
         "latitude": float(lat),
-        "full_name": str(img_name),
     }
 
 
@@ -55,13 +60,24 @@ def process_img(img_path: str,
 
     entries = []
 
+    global g
+
+    name, lon, lat = f_name.split('_')
+    lat = lat.split('.')[0]
+
+    gbif_data = g.request_by_geofence(coord=(float(lon), float(lat)))
+    gbif_data = g.process_output(gbif_data)
+
     for i, r in enumerate(rots):
         cv2.imwrite(os.path.join(d_name, f"{i}_{f_name}"), r)
-        entries.append(gen_entry(
+        e = gen_entry(
             img_name=f_name, 
             variation=i,
             city=city,
-        ))
+        )
+        if gbif_data is not None:
+            e.update(gbif_data)
+        entries.append(e)
     return entries
     
 
@@ -69,6 +85,7 @@ def process_img(img_path: str,
 def create_df(output_path: str, 
               data: list[dict]) -> None:
     df = pd.DataFrame(data=data)
+    df.index.name = "id"
     df.to_csv(output_path)
 
     print(f"Sucessfully created df with cols: {df.columns}, and size: {df.shape}.")
@@ -95,16 +112,22 @@ def process_sats(input_path_raw: str,
             entries.extend(e_new)
             print(f"Processed image: {img}")
         
+        df_path: str = os.path.join(csv_path, f"{city}.csv")
+        create_df(df_path, entries)
+        g.cache.save_pickle(g.species_cache, pickle_name="species_cache")
 
 
-        
 
 
-
-
-input_path_raw = "/Users/apple/Documents/github/geo-biodiversity-dataset/dataset/sat/raw"
-output_path = "/Users/apple/Documents/github/geo-biodiversity-dataset/dataset/sat/processed"
-
-csv_path = "/Users/apple/Documents/github/geo-biodiversity-dataset/dataset/csv/seperate"
-
-process_sats(input_path_raw, output_path, csv_path)
+def combine_csvs(input_path: str, 
+                 output_file: str) -> None:
+    files = os.listdir(input_path)
+    all_dfs = []
+    for f in files:
+        if f.endswith('.csv'):
+            df = pd.read_csv(os.path.join(input_path, f), index_col=False).drop(labels="id", axis=1)
+            all_dfs.append(df)
+    combined_df = pd.concat(all_dfs, ignore_index=True)
+    combined_df.index.name = "id"
+    combined_df.to_csv(output_file)
+    print(f"Combined CSV saved to {output_file} with shape {combined_df.shape}.")

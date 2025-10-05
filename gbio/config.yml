@@ -1,5 +1,9 @@
 api-paths:
-  GBIF: 
-    name: GBIF
+  GBIF_SEARCH: 
+    name: GBIF_SEARCH
     url: https://api.gbif.org/v1/occurrence/search
+    description: API access to the Global Biodiversity Information Facility
+  GBIF_SPECIES: 
+    name: GBIF_SPECIES
+    url: https://api.gbif.org/v1/species
     description: API access to the Global Biodiversity Information Facility
