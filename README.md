@@ -22,3 +22,8 @@ cd ./geo-biodiversity-dataset;
 Navigate to ```./scripts/notebooks/generate.ipynb``` for preprocessing (after sattelites are generated), and navigate to ```./scripts/notebooks/sattelite.ipynb``` to pull images from sattelites.
 
 For use in the 2025 IBMz Datathon.
+
+Coauthored by:
+
+Eoin Dwane (Maynooth University): https://www.linkedin.com/in/eoin-dwane/
+Christopher Pukas (Imperial College London): https://www.linkedin.com/in/chrispukas/
