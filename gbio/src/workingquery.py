@@ -90,7 +90,7 @@ def query_tasks(tile_width_km: float=1.5,
     ee.Initialize(project=earth_engine_project)
 
     tasks = []
-    for lon_center, lat_center in centers:
+    for lat_center, lon_center in centers:
         grid = create_grid(lon_center, lat_center, tile_width_km, tiles_per_side)
         for lon, lat in grid:
             task = export_tile(lon, lat, tile_width_km, folder=folder, prefix='tile')
